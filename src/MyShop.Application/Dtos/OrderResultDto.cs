@@ -20,7 +20,7 @@ public class OrderResultDto
 /// </summary>
 public class OrderItemResultDto
 {
-    public int ProductId { get; set; }
+    public Guid ProductId { get; set; }
     public string ProductName { get; set; } = string.Empty;
     public int Quantity { get; set; }
     public Money UnitPrice { get; set; } = null!;

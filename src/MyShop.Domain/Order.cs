@@ -61,7 +61,7 @@ public class Order
     /// <summary>
     /// Remove um item do pedido.
     /// </summary>
-    public void RemoveItem(int itemId)
+    public void RemoveItem(Guid itemId)
     {
         if (Status != OrderStatus.Pending)
             throw new DomainException("Cannot remove items from an order that is not pending");

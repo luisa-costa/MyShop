@@ -43,7 +43,7 @@ public class ProductsController : ControllerBase
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(Product), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<Product>> GetProduct(int id, CancellationToken cancellationToken)
+    public async Task<ActionResult<Product>> GetProduct(Guid id, CancellationToken cancellationToken)
     {
         var product = await _productService.GetProductByIdAsync(id, cancellationToken);
         if (product == null)
@@ -90,7 +90,7 @@ public class ProductsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> UpdateStock(int id, [FromBody] UpdateStockDto request, CancellationToken cancellationToken)
+    public async Task<IActionResult> UpdateStock(Guid id, [FromBody] UpdateStockDto request, CancellationToken cancellationToken)
     {
         try
         {

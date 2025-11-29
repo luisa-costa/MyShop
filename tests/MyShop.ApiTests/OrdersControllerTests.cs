@@ -1,7 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
-using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using MyShop.Domain;
 using MyShop.Infrastructure.Data;
 
@@ -56,16 +56,16 @@ public class OrdersControllerTests : IClassFixture<MyShopWebApplicationFactory>,
         var response = await _client.PostAsJsonAsync("/api/orders", createOrderDto);
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         
         var orderResult = await response.Content.ReadFromJsonAsync<dynamic>();
-        orderResult.Should().NotBeNull();
+        Assert.NotNull(orderResult);
         
         // Verifica que o estoque foi reduzido
         await _context.Entry(product1).ReloadAsync();
         await _context.Entry(product2).ReloadAsync();
-        product1.StockQuantity.Should().Be(8); // 10 - 2
-        product2.StockQuantity.Should().Be(4); // 5 - 1
+        Assert.Equal(8, product1.StockQuantity); // 10 - 2
+        Assert.Equal(4, product2.StockQuantity); // 5 - 1
     }
 
     [Fact]
@@ -93,11 +93,11 @@ public class OrdersControllerTests : IClassFixture<MyShopWebApplicationFactory>,
         var response = await _client.PostAsJsonAsync("/api/orders", createOrderDto);
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         
         // Verifica que o estoque NÃO foi alterado
         await _context.Entry(product).ReloadAsync();
-        product.StockQuantity.Should().Be(5);
+        Assert.Equal(5, product.StockQuantity);
     }
 
     [Fact]
@@ -125,21 +125,22 @@ public class OrdersControllerTests : IClassFixture<MyShopWebApplicationFactory>,
         var response = await _client.PostAsJsonAsync("/api/orders", createOrderDto);
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         
         // Em um cenário real, verificaríamos o Total no response
         // Por simplicidade, apenas verificamos que foi criado com sucesso
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
     }
 
     public void Dispose()
     {
         // Limpa o banco após cada teste
+        // Como estamos usando SQLite in-memory, o banco será descartado automaticamente
+        // Mas limpamos explicitamente para garantir isolamento entre testes
         _context.Products.RemoveRange(_context.Products);
         _context.Orders.RemoveRange(_context.Orders);
         _context.SaveChanges();
         _context.Dispose();
-        _client.Dispose();
+        _client?.Dispose();
     }
 }
 

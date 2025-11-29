@@ -20,7 +20,7 @@ public class ProductService
     /// <summary>
     /// Obtém um produto por ID.
     /// </summary>
-    public async Task<Product?> GetProductByIdAsync(int id, CancellationToken cancellationToken = default)
+    public async Task<Product?> GetProductByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await _productRepository.GetByIdAsync(id, cancellationToken);
     }
@@ -56,7 +56,7 @@ public class ProductService
     /// <summary>
     /// Atualiza o estoque de um produto.
     /// </summary>
-    public async Task UpdateProductStockAsync(int productId, int newStockQuantity, CancellationToken cancellationToken = default)
+    public async Task UpdateProductStockAsync(Guid productId, int newStockQuantity, CancellationToken cancellationToken = default)
     {
         var product = await _productRepository.GetByIdAsync(productId, cancellationToken);
         if (product == null)

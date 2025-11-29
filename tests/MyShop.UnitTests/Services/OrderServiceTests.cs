@@ -1,4 +1,3 @@
-using FluentAssertions;
 using MyShop.Application.Dtos;
 using MyShop.Application.Interfaces;
 using MyShop.Application.Services;
@@ -52,12 +51,12 @@ public class OrderServiceTests
             ShippingAddress = new Address("Street", "City", "State", "12345"),
             Items = new List<OrderItemDto>
             {
-                new() { ProductId = 1, Quantity = 2 }
+                new() { ProductId = product.Id, Quantity = 2 }
             }
         };
 
         _mockProductRepository
-            .Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetByIdAsync(product.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(product);
 
         Order? savedOrder = null;
@@ -77,14 +76,13 @@ public class OrderServiceTests
         var result = await _service.CreateOrderAsync(dto);
 
         // Assert
-        result.Should().NotBeNull();
-        result.OrderId.Should().BeGreaterThan(0);
-        result.CustomerEmail.Should().Be(dto.CustomerEmail);
-        result.Status.Should().Be(OrderStatus.Confirmed);
-        result.Items.Should().HaveCount(1);
+        Assert.NotNull(result);
+        Assert.Equal(dto.CustomerEmail, result.CustomerEmail);
+        Assert.Equal(OrderStatus.Confirmed, result.Status);
+        Assert.Single(result.Items);
         
         // Verifica que o estoque foi reduzido
-        product.StockQuantity.Should().Be(8); // 10 - 2 = 8
+        Assert.Equal(8, product.StockQuantity); // 10 - 2 = 8
     }
 
     [Fact]
@@ -98,12 +96,12 @@ public class OrderServiceTests
             ShippingAddress = new Address("Street", "City", "State", "12345"),
             Items = new List<OrderItemDto>
             {
-                new() { ProductId = 1, Quantity = 1 } // 250.00
+                new() { ProductId = product.Id, Quantity = 1 } // 250.00
             }
         };
 
         _mockProductRepository
-            .Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetByIdAsync(product.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(product);
 
         Order? savedOrder = null;
@@ -123,8 +121,8 @@ public class OrderServiceTests
         var result = await _service.CreateOrderAsync(dto);
 
         // Assert: Frete deve ser zero
-        savedOrder!.ShippingCost.Amount.Should().Be(0);
-        result.Total.Amount.Should().Be(250.00m); // Sem frete
+        Assert.Equal(0, savedOrder!.ShippingCost.Amount);
+        Assert.Equal(250.00m, result.Total.Amount); // Sem frete
     }
 
     [Fact]
@@ -138,12 +136,12 @@ public class OrderServiceTests
             ShippingAddress = new Address("Street", "City", "State", "12345"),
             Items = new List<OrderItemDto>
             {
-                new() { ProductId = 1, Quantity = 1 } // 50.00
+                new() { ProductId = product.Id, Quantity = 1 } // 50.00
             }
         };
 
         _mockProductRepository
-            .Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetByIdAsync(product.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(product);
 
         Order? savedOrder = null;
@@ -163,8 +161,8 @@ public class OrderServiceTests
         var result = await _service.CreateOrderAsync(dto);
 
         // Assert: Frete deve ser R$ 15
-        savedOrder!.ShippingCost.Amount.Should().Be(15.00m);
-        result.Total.Amount.Should().Be(65.00m); // 50 + 15
+        Assert.Equal(15.00m, savedOrder!.ShippingCost.Amount);
+        Assert.Equal(65.00m, result.Total.Amount); // 50 + 15
     }
 
     [Fact]
@@ -178,12 +176,12 @@ public class OrderServiceTests
             ShippingAddress = new Address("Street", "City", "State", "12345"),
             Items = new List<OrderItemDto>
             {
-                new() { ProductId = 1, Quantity = 1 } // 600.00
+                new() { ProductId = product.Id, Quantity = 1 } // 600.00
             }
         };
 
         _mockProductRepository
-            .Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetByIdAsync(product.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(product);
 
         Order? savedOrder = null;
@@ -203,9 +201,9 @@ public class OrderServiceTests
         var result = await _service.CreateOrderAsync(dto);
 
         // Assert: Deve ter desconto de 10% (60.00) e frete grátis
-        savedOrder!.Discount.Amount.Should().Be(60.00m);
-        savedOrder.ShippingCost.Amount.Should().Be(0); // Frete grátis acima de 200
-        result.Total.Amount.Should().Be(540.00m); // 600 - 60
+        Assert.Equal(60.00m, savedOrder!.Discount.Amount);
+        Assert.Equal(0, savedOrder.ShippingCost.Amount); // Frete grátis acima de 200
+        Assert.Equal(540.00m, result.Total.Amount); // 600 - 60
     }
 
     [Fact]
@@ -219,12 +217,12 @@ public class OrderServiceTests
             ShippingAddress = new Address("Street", "City", "State", "12345"),
             Items = new List<OrderItemDto>
             {
-                new() { ProductId = 1, Quantity = 10 } // Tentando comprar 10
+                new() { ProductId = product.Id, Quantity = 10 } // Tentando comprar 10
             }
         };
 
         _mockProductRepository
-            .Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetByIdAsync(product.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(product);
 
         // Act & Assert
@@ -257,7 +255,7 @@ public class OrderServiceTests
         // Arrange
         var product = new Product("Product", "Desc", new Money(100.00m), 5);
         var order = new Order("customer@example.com", new Address("Street", "City", "State", "12345"));
-        order.AddItem(new OrderItem(1, "Product", 2, new Money(100.00m)));
+        order.AddItem(new OrderItem(product.Id, "Product", 2, new Money(100.00m)));
         order.Confirm();
 
         _mockOrderRepository
@@ -265,15 +263,15 @@ public class OrderServiceTests
             .ReturnsAsync(order);
 
         _mockProductRepository
-            .Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetByIdAsync(product.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(product);
 
         // Act
         await _service.CancelOrderAsync(1);
 
         // Assert
-        order.Status.Should().Be(OrderStatus.Cancelled);
-        product.StockQuantity.Should().Be(7); // 5 + 2 = 7 (estoque restaurado)
+        Assert.Equal(OrderStatus.Cancelled, order.Status);
+        Assert.Equal(7, product.StockQuantity); // 5 + 2 = 7 (estoque restaurado)
         _mockOrderRepository.Verify(r => r.UpdateAsync(order, It.IsAny<CancellationToken>()), Times.Once);
         _mockProductRepository.Verify(r => r.UpdateAsync(product, It.IsAny<CancellationToken>()), Times.Once);
     }

@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using MyShop.Application.Interfaces;
 using MyShop.Domain;
 

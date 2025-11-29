@@ -18,7 +18,7 @@ public class ProductRepository : IProductRepository
         _context = context ?? throw new ArgumentNullException(nameof(context));
     }
 
-    public async Task<Product?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+    public async Task<Product?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await _context.Products.FindAsync(new object[] { id }, cancellationToken);
     }
@@ -41,7 +41,7 @@ public class ProductRepository : IProductRepository
         await _context.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task DeleteAsync(int id, CancellationToken cancellationToken = default)
+    public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var product = await GetByIdAsync(id, cancellationToken);
         if (product != null)

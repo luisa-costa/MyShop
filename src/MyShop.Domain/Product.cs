@@ -6,7 +6,7 @@ namespace MyShop.Domain;
 /// </summary>
 public class Product
 {
-    public int Id { get; private set; }
+    public Guid Id { get; private set; }
     public string Name { get; private set; }
     public string Description { get; private set; }
     public Money Price { get; private set; }
@@ -25,6 +25,7 @@ public class Product
         if (stockQuantity < 0)
             throw new ArgumentException("Stock quantity cannot be negative", nameof(stockQuantity));
 
+        Id = Guid.NewGuid();
         Name = name;
         Description = description ?? string.Empty;
         Price = price;

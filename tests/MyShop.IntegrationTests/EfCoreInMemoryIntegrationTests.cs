@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using MyShop.Application.Services;
 using MyShop.Domain;
@@ -57,15 +56,15 @@ public class EfCoreInMemoryIntegrationTests : IDisposable
         var product = await _productService.CreateProductAsync(name, description, price, stockQuantity);
 
         // Assert: Verifica que o produto foi salvo no banco
-        product.Should().NotBeNull();
-        product.Id.Should().BeGreaterThan(0);
+        Assert.NotNull(product);
+        Assert.NotEqual(Guid.Empty, product.Id);
 
         // Verifica diretamente no banco usando o contexto
         var productFromDb = await _context.Products.FindAsync(product.Id);
-        productFromDb.Should().NotBeNull();
-        productFromDb!.Name.Should().Be(name);
-        productFromDb.Price.Amount.Should().Be(99.99m);
-        productFromDb.StockQuantity.Should().Be(stockQuantity);
+        Assert.NotNull(productFromDb);
+        Assert.Equal(name, productFromDb!.Name);
+        Assert.Equal(99.99m, productFromDb.Price.Amount);
+        Assert.Equal(stockQuantity, productFromDb.StockQuantity);
     }
 
     [Fact]
@@ -80,9 +79,9 @@ public class EfCoreInMemoryIntegrationTests : IDisposable
         var result = await _productService.GetProductByIdAsync(product.Id);
 
         // Assert
-        result.Should().NotBeNull();
-        result!.Name.Should().Be("Existing Product");
-        result.Price.Amount.Should().Be(50.00m);
+        Assert.NotNull(result);
+        Assert.Equal("Existing Product", result!.Name);
+        Assert.Equal(50.00m, result.Price.Amount);
     }
 
     [Fact]
@@ -102,8 +101,8 @@ public class EfCoreInMemoryIntegrationTests : IDisposable
         // Assert: Verifica que o banco foi atualizado
         // Precisamos recarregar a entidade do banco para ver as mudanças
         await _context.Entry(product).ReloadAsync();
-        product.StockQuantity.Should().Be(newStock);
-        product.StockQuantity.Should().NotBe(originalStock);
+        Assert.Equal(newStock, product.StockQuantity);
+        Assert.NotEqual(originalStock, product.StockQuantity);
     }
 
     [Fact]
@@ -122,11 +121,11 @@ public class EfCoreInMemoryIntegrationTests : IDisposable
         var result = await _productService.GetActiveProductsAsync();
 
         // Assert: Apenas produtos ativos devem ser retornados
-        result.Should().HaveCount(2);
-        result.Should().OnlyContain(p => p.IsActive);
-        result.Should().Contain(p => p.Name == "Active 1");
-        result.Should().Contain(p => p.Name == "Active 2");
-        result.Should().NotContain(p => p.Name == "Inactive");
+        Assert.Equal(2, result.Count());
+        Assert.All(result, p => Assert.True(p.IsActive));
+        Assert.Contains(result, p => p.Name == "Active 1");
+        Assert.Contains(result, p => p.Name == "Active 2");
+        Assert.DoesNotContain(result, p => p.Name == "Inactive");
     }
 
     [Fact]
@@ -138,7 +137,7 @@ public class EfCoreInMemoryIntegrationTests : IDisposable
 
         // Arrange: Verifica que o banco está vazio (isolado)
         var allProducts = await _context.Products.ToListAsync();
-        allProducts.Should().BeEmpty();
+        Assert.Empty(allProducts);
 
         // Act: Cria um produto
         var product = new Product("Isolated Product", "Desc", new Money(100m), 10);
@@ -147,8 +146,8 @@ public class EfCoreInMemoryIntegrationTests : IDisposable
 
         // Assert: Apenas este produto existe
         var productsAfter = await _context.Products.ToListAsync();
-        productsAfter.Should().HaveCount(1);
-        productsAfter.First().Name.Should().Be("Isolated Product");
+        Assert.Single(productsAfter);
+        Assert.Equal("Isolated Product", productsAfter.First().Name);
     }
 
     [Fact]
@@ -163,9 +162,9 @@ public class EfCoreInMemoryIntegrationTests : IDisposable
         var productFromDb = await _context.Products.FindAsync(product.Id);
 
         // Assert: Verifica que o Value Object foi persistido e recuperado corretamente
-        productFromDb.Should().NotBeNull();
-        productFromDb!.Price.Amount.Should().Be(123.45m);
-        productFromDb.Price.Currency.Should().Be("BRL");
+        Assert.NotNull(productFromDb);
+        Assert.Equal(123.45m, productFromDb!.Price.Amount);
+        Assert.Equal("BRL", productFromDb.Price.Currency);
     }
 
     public void Dispose()
@@ -210,7 +209,7 @@ public class DatabaseLimitationsTests : IDisposable
         
         // Verifica que o banco foi criado
         var canConnect = await _context.Database.CanConnectAsync();
-        canConnect.Should().BeTrue();
+        Assert.True(canConnect);
 
         // Verifica que as tabelas existem
         var tables = await _context.Database.GetAppliedMigrationsAsync();

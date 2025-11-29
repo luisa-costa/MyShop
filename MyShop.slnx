@@ -6,6 +6,8 @@
     <Project Path="src/MyShop.Infrastructure/MyShop.Infrastructure.csproj" Id="bce12451-7a84-4d95-9e79-bd6fd0e0654d" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/MyShop.ApiTests/MyShop.ApiTests.csproj" />
+    <Project Path="tests/MyShop.IntegrationTests/MyShop.IntegrationTests.csproj" />
     <Project Path="tests/MyShop.UnitTests/MyShop.UnitTests.csproj" Id="34174973-4c5b-4d89-97b7-58f381393a64" />
   </Folder>
 </Solution>

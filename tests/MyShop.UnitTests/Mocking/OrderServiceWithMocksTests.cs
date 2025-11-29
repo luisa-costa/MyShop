@@ -1,4 +1,3 @@
-using FluentAssertions;
 using MyShop.Application.Dtos;
 using MyShop.Application.Interfaces;
 using MyShop.Application.Services;
@@ -48,11 +47,11 @@ public class OrderServiceWithMocksTests
         {
             CustomerEmail = "customer@example.com",
             ShippingAddress = new Address("Street", "City", "State", "12345"),
-            Items = new List<OrderItemDto> { new() { ProductId = 1, Quantity = 1 } }
+            Items = new List<OrderItemDto> { new() { ProductId = product.Id, Quantity = 1 } }
         };
 
         _mockProductRepository
-            .Setup(r => r.GetByIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetByIdAsync(product.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(product);
 
         Order? savedOrder = null;
@@ -101,11 +100,11 @@ public class OrderServiceWithMocksTests
         {
             CustomerEmail = "customer@example.com",
             ShippingAddress = new Address("Street", "City", "State", "12345"),
-            Items = new List<OrderItemDto> { new() { ProductId = 1, Quantity = 1 } }
+            Items = new List<OrderItemDto> { new() { ProductId = product.Id, Quantity = 1 } }
         };
 
         _mockProductRepository
-            .Setup(r => r.GetByIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetByIdAsync(product.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(product);
 
         _mockOrderRepository
@@ -138,11 +137,11 @@ public class OrderServiceWithMocksTests
         {
             CustomerEmail = "customer@example.com",
             ShippingAddress = new Address("Street", "City", "State", "12345"),
-            Items = new List<OrderItemDto> { new() { ProductId = 1, Quantity = 1 } }
+            Items = new List<OrderItemDto> { new() { ProductId = product.Id, Quantity = 1 } }
         };
 
         _mockProductRepository
-            .Setup(r => r.GetByIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetByIdAsync(product.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(product);
 
         // Simula uma exceção ao salvar
@@ -169,13 +168,13 @@ public class OrderServiceWithMocksTests
         {
             CustomerEmail = "customer@example.com",
             ShippingAddress = new Address("Street", "City", "State", "12345"),
-            Items = new List<OrderItemDto> { new() { ProductId = 1, Quantity = 1 } }
+            Items = new List<OrderItemDto> { new() { ProductId = product.Id, Quantity = 1 } }
         };
 
         var callOrder = new List<string>();
 
         _mockProductRepository
-            .Setup(r => r.GetByIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetByIdAsync(product.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(product)
             .Callback(() => callOrder.Add("GetProduct"));
 
@@ -203,12 +202,11 @@ public class OrderServiceWithMocksTests
         await _service.CreateOrderAsync(dto);
 
         // Assert: Verifica a ordem das chamadas
-        callOrder.Should().ContainInOrder(
-            "GetProduct",
-            "UpdateProduct",
-            "AddOrder",
-            "ProcessPayment",
-            "SendEmail");
+        Assert.Equal("GetProduct", callOrder[0]);
+        Assert.Equal("UpdateProduct", callOrder[1]);
+        Assert.Equal("AddOrder", callOrder[2]);
+        Assert.Equal("ProcessPayment", callOrder[3]);
+        Assert.Equal("SendEmail", callOrder[4]);
     }
 
     [Fact]
@@ -220,12 +218,16 @@ public class OrderServiceWithMocksTests
         {
             CustomerEmail = "customer@example.com",
             ShippingAddress = new Address("Street", "City", "State", "12345"),
-            Items = new List<OrderItemDto> { new() { ProductId = 1, Quantity = 1 } }
+            Items = new List<OrderItemDto> { new() { ProductId = product.Id, Quantity = 1 } }
         };
 
         _mockProductRepository
-            .Setup(r => r.GetByIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetByIdAsync(product.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(product);
+
+        _mockProductRepository
+            .Setup(r => r.UpdateAsync(It.IsAny<Product>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
 
         _mockOrderRepository
             .Setup(r => r.AddAsync(It.IsAny<Order>(), It.IsAny<CancellationToken>()))
@@ -235,10 +237,21 @@ public class OrderServiceWithMocksTests
             .Setup(g => g.ProcessPaymentAsync(It.IsAny<Money>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync("TXN-123");
 
+        _mockEmailSender
+            .Setup(e => e.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
         // Act
         await _service.CreateOrderAsync(dto);
 
-        // Assert: Verifica que não houve outras chamadas além das esperadas
+        // Assert: Verifica as chamadas esperadas
+        _mockProductRepository.Verify(r => r.GetByIdAsync(product.Id, It.IsAny<CancellationToken>()), Times.Once);
+        _mockProductRepository.Verify(r => r.UpdateAsync(It.IsAny<Product>(), It.IsAny<CancellationToken>()), Times.Once);
+        _mockOrderRepository.Verify(r => r.AddAsync(It.IsAny<Order>(), It.IsAny<CancellationToken>()), Times.Once);
+        _mockPaymentGateway.Verify(g => g.ProcessPaymentAsync(It.IsAny<Money>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
+        _mockEmailSender.Verify(e => e.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
+        
+        // Verifica que não houve outras chamadas além das esperadas
         _mockPaymentGateway.VerifyNoOtherCalls();
         _mockEmailSender.VerifyNoOtherCalls();
     }
@@ -247,18 +260,17 @@ public class OrderServiceWithMocksTests
     public async Task CancelOrderAsync_ShouldRefundPayment()
     {
         // Arrange
-        var order = new Order("customer@example.com", new Address("Street", "City", "State", "12345"));
-        order.AddItem(new OrderItem(1, "Product", 1, new Money(100.00m)));
-        order.Confirm();
-
         var product = new Product("Product", "Desc", new Money(100.00m), 5);
+        var order = new Order("customer@example.com", new Address("Street", "City", "State", "12345"));
+        order.AddItem(new OrderItem(product.Id, "Product", 1, new Money(100.00m)));
+        order.Confirm();
 
         _mockOrderRepository
             .Setup(r => r.GetByIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(order);
 
         _mockProductRepository
-            .Setup(r => r.GetByIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetByIdAsync(product.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(product);
 
         // Act
@@ -283,11 +295,11 @@ public class OrderServiceWithMocksTests
         {
             CustomerEmail = "customer@example.com",
             ShippingAddress = new Address("Street", "City", "State", "12345"),
-            Items = new List<OrderItemDto> { new() { ProductId = 1, Quantity = 1 } }
+            Items = new List<OrderItemDto> { new() { ProductId = product.Id, Quantity = 1 } }
         };
 
         _mockProductRepository
-            .Setup(r => r.GetByIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetByIdAsync(product.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(product);
 
         _mockOrderRepository

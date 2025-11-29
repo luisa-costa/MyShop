@@ -1,7 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
-using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using MyShop.Domain;
 using MyShop.Infrastructure.Data;
 
@@ -58,11 +58,11 @@ public class ProductsControllerTests : IClassFixture<MyShopWebApplicationFactory
         var response = await _client.GetAsync("/api/products");
 
         // Assert: Verifica o status code e o conteúdo
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         
         var products = await response.Content.ReadFromJsonAsync<List<Product>>();
-        products.Should().NotBeNull();
-        products!.Count.Should().BeGreaterThan(0);
+        Assert.NotNull(products);
+        Assert.True(products!.Count > 0);
     }
 
     [Fact]
@@ -77,22 +77,25 @@ public class ProductsControllerTests : IClassFixture<MyShopWebApplicationFactory
         var response = await _client.GetAsync($"/api/products/{product.Id}");
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         
         var returnedProduct = await response.Content.ReadFromJsonAsync<Product>();
-        returnedProduct.Should().NotBeNull();
-        returnedProduct!.Name.Should().Be("Test Product");
-        returnedProduct.Price.Amount.Should().Be(99.99m);
+        Assert.NotNull(returnedProduct);
+        Assert.Equal("Test Product", returnedProduct!.Name);
+        Assert.Equal(99.99m, returnedProduct.Price.Amount);
     }
 
     [Fact]
     public async Task GetProduct_WhenProductDoesNotExist_ShouldReturnNotFound()
     {
+        // Arrange: Usa um Guid que não existe no banco
+        var nonExistentId = Guid.NewGuid();
+
         // Act
-        var response = await _client.GetAsync("/api/products/99999");
+        var response = await _client.GetAsync($"/api/products/{nonExistentId}");
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     [Fact]
@@ -112,17 +115,39 @@ public class ProductsControllerTests : IClassFixture<MyShopWebApplicationFactory
         var response = await _client.PostAsJsonAsync("/api/products", createProductDto);
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         
         var createdProduct = await response.Content.ReadFromJsonAsync<Product>();
-        createdProduct.Should().NotBeNull();
-        createdProduct!.Name.Should().Be("New Product");
-        createdProduct.Price.Amount.Should().Be(150.00m);
-        createdProduct.StockQuantity.Should().Be(20);
+        Assert.NotNull(createdProduct);
+        Assert.Equal("New Product", createdProduct!.Name);
+        Assert.Equal(150.00m, createdProduct.Price.Amount);
+        Assert.Equal(20, createdProduct.StockQuantity);
 
-        // Verifica que o produto foi salvo no banco
-        var productFromDb = await _context.Products.FindAsync(createdProduct.Id);
-        productFromDb.Should().NotBeNull();
+        // Verifica que o produto foi salvo no banco fazendo uma requisição GET
+        // Isso garante que o produto está acessível através da API
+        var getResponse = await _client.GetAsync($"/api/products/{createdProduct.Id}");
+        Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
+        
+        var productFromApi = await getResponse.Content.ReadFromJsonAsync<Product>();
+        Assert.NotNull(productFromApi);
+        Assert.Equal(createdProduct.Id, productFromApi!.Id);
+        Assert.Equal("New Product", productFromApi.Name);
+        Assert.Equal(150.00m, productFromApi.Price.Amount);
+        Assert.Equal(20, productFromApi.StockQuantity);
+        
+        // Verifica também diretamente no banco usando um novo escopo
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<MyShopDbContext>();
+        
+        var productFromDb = await context.Products
+            .AsNoTracking()
+            .FirstOrDefaultAsync(p => p.Id == createdProduct.Id);
+        
+        Assert.NotNull(productFromDb);
+        Assert.Equal(createdProduct.Id, productFromDb!.Id);
+        Assert.Equal("New Product", productFromDb.Name);
+        Assert.Equal(150.00m, productFromDb.Price.Amount);
+        Assert.Equal(20, productFromDb.StockQuantity);
     }
 
     [Fact]
@@ -142,7 +167,7 @@ public class ProductsControllerTests : IClassFixture<MyShopWebApplicationFactory
         var response = await _client.PostAsJsonAsync("/api/products", createProductDto);
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]
@@ -162,36 +187,39 @@ public class ProductsControllerTests : IClassFixture<MyShopWebApplicationFactory
         var response = await _client.PutAsJsonAsync($"/api/products/{product.Id}/stock", updateStockDto);
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
 
         // Verifica que o estoque foi atualizado no banco
         await _context.Entry(product).ReloadAsync();
-        product.StockQuantity.Should().Be(25);
+        Assert.Equal(25, product.StockQuantity);
     }
 
     [Fact]
     public async Task UpdateStock_WhenProductDoesNotExist_ShouldReturnNotFound()
     {
-        // Arrange
+        // Arrange: Usa um Guid que não existe no banco
+        var nonExistentId = Guid.NewGuid();
         var updateStockDto = new
         {
             StockQuantity = 25
         };
 
         // Act
-        var response = await _client.PutAsJsonAsync("/api/products/99999/stock", updateStockDto);
+        var response = await _client.PutAsJsonAsync($"/api/products/{nonExistentId}/stock", updateStockDto);
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     public void Dispose()
     {
         // Limpa o banco após cada teste
+        // Como estamos usando SQLite in-memory, o banco será descartado automaticamente
+        // Mas limpamos explicitamente para garantir isolamento entre testes
         _context.Products.RemoveRange(_context.Products);
         _context.SaveChanges();
         _context.Dispose();
-        _client.Dispose();
+        _client?.Dispose();
     }
 }
 

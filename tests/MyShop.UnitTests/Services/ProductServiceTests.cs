@@ -1,4 +1,3 @@
-using FluentAssertions;
 using MyShop.Application.Interfaces;
 using MyShop.Application.Services;
 using MyShop.Domain;
@@ -32,7 +31,7 @@ public class ProductServiceTests
     public async Task GetProductByIdAsync_WhenProductExists_ShouldReturnProduct()
     {
         // Arrange: Prepara os dados e configurações necessárias
-        var productId = 1;
+        var productId = Guid.NewGuid();
         var expectedProduct = new Product("Test Product", "Description", new Money(100.00m), 10);
         
         // Configura o mock para retornar o produto quando GetByIdAsync for chamado
@@ -44,9 +43,9 @@ public class ProductServiceTests
         var result = await _service.GetProductByIdAsync(productId);
 
         // Assert: Verifica se o resultado está correto
-        result.Should().NotBeNull();
-        result.Should().Be(expectedProduct);
-        result!.Name.Should().Be("Test Product");
+        Assert.NotNull(result);
+        Assert.Equal(expectedProduct, result);
+        Assert.Equal("Test Product", result!.Name);
         
         // Verifica se o método do repositório foi chamado corretamente
         _mockRepository.Verify(r => r.GetByIdAsync(productId, It.IsAny<CancellationToken>()), Times.Once);
@@ -56,7 +55,8 @@ public class ProductServiceTests
     public async Task GetProductByIdAsync_WhenProductDoesNotExist_ShouldReturnNull()
     {
         // Arrange
-        var productId = 999;
+        var productId = Guid.NewGuid();
+
         _mockRepository
             .Setup(r => r.GetByIdAsync(productId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Product?)null);
@@ -65,7 +65,7 @@ public class ProductServiceTests
         var result = await _service.GetProductByIdAsync(productId);
 
         // Assert
-        result.Should().BeNull();
+        Assert.Null(result);
         _mockRepository.Verify(r => r.GetByIdAsync(productId, It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -88,11 +88,11 @@ public class ProductServiceTests
         var result = await _service.GetActiveProductsAsync();
 
         // Assert
-        result.Should().HaveCount(2);
-        result.Should().OnlyContain(p => p.IsActive);
-        result.Should().Contain(activeProduct1);
-        result.Should().Contain(activeProduct2);
-        result.Should().NotContain(inactiveProduct);
+        Assert.Equal(2, result.Count());
+        Assert.All(result, p => Assert.True(p.IsActive));
+        Assert.Contains(activeProduct1, result);
+        Assert.Contains(activeProduct2, result);
+        Assert.DoesNotContain(inactiveProduct, result);
     }
 
     [Fact]
@@ -117,12 +117,12 @@ public class ProductServiceTests
         var result = await _service.CreateProductAsync(name, description, price, stockQuantity);
 
         // Assert
-        result.Should().NotBeNull();
-        result.Name.Should().Be(name);
-        result.Description.Should().Be(description);
-        result.Price.Should().Be(price);
-        result.StockQuantity.Should().Be(stockQuantity);
-        result.IsActive.Should().BeTrue();
+        Assert.NotNull(result);
+        Assert.Equal(name, result.Name);
+        Assert.Equal(description, result.Description);
+        Assert.Equal(price, result.Price);
+        Assert.Equal(stockQuantity, result.StockQuantity);
+        Assert.True(result.IsActive);
         
         _mockRepository.Verify(r => r.AddAsync(It.IsAny<Product>(), It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -171,7 +171,7 @@ public class ProductServiceTests
     public async Task UpdateProductStockAsync_WhenProductExists_ShouldUpdateStock()
     {
         // Arrange
-        var productId = 1;
+        var productId = Guid.NewGuid();
         var existingProduct = new Product("Product", "Desc", new Money(100m), 10);
         var newStockQuantity = 25;
 
@@ -183,7 +183,7 @@ public class ProductServiceTests
         await _service.UpdateProductStockAsync(productId, newStockQuantity);
 
         // Assert
-        existingProduct.StockQuantity.Should().Be(newStockQuantity);
+        Assert.Equal(newStockQuantity, existingProduct.StockQuantity);
         _mockRepository.Verify(r => r.GetByIdAsync(productId, It.IsAny<CancellationToken>()), Times.Once);
         _mockRepository.Verify(r => r.UpdateAsync(existingProduct, It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -192,7 +192,7 @@ public class ProductServiceTests
     public async Task UpdateProductStockAsync_WhenProductDoesNotExist_ShouldThrowDomainException()
     {
         // Arrange
-        var productId = 999;
+        var productId = Guid.NewGuid();
         _mockRepository
             .Setup(r => r.GetByIdAsync(productId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Product?)null);
@@ -208,7 +208,7 @@ public class ProductServiceTests
     public async Task UpdateProductStockAsync_WithNegativeStock_ShouldThrowDomainException()
     {
         // Arrange
-        var productId = 1;
+        var productId = Guid.NewGuid();
         var existingProduct = new Product("Product", "Desc", new Money(100m), 10);
 
         _mockRepository
