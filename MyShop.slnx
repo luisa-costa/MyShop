@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/MyShop.API/MyShop.API.csproj" Id="8556d5b4-bd98-4053-869a-d731ad6572b7" />
+    <Project Path="src/MyShop.Application/MyShop.Application.csproj" Id="a7c2300d-d964-4548-a615-0bc5b61b12cb" />
+    <Project Path="src/MyShop.Domain/MyShop.Domain.csproj" Id="35f68d57-58d2-4688-b5bc-1236cad39e85" />
+    <Project Path="src/MyShop.Infrastructure/MyShop.Infrastructure.csproj" Id="bce12451-7a84-4d95-9e79-bd6fd0e0654d" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/MyShop.UnitTests/MyShop.UnitTests.csproj" Id="34174973-4c5b-4d89-97b7-58f381393a64" />
+  </Folder>
+</Solution>
