@@ -50,7 +50,9 @@ public class ProductService
             throw new DomainException("Stock quantity cannot be negative");
 
         var product = new Product(name, description, price, stockQuantity);
-        return await _productRepository.AddAsync(product, cancellationToken);
+        var createdProduct = await _productRepository.AddAsync(product, cancellationToken);
+        
+        return createdProduct;
     }
 
     /// <summary>

@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace MyShop.Domain;
 
 /// <summary>
@@ -14,8 +16,10 @@ public class Product
     public bool IsActive { get; private set; }
 
     // Construtor privado para garantir que a criação seja feita através de métodos controlados
+    
     private Product() { }
 
+    [JsonConstructor]
     public Product(string name, string description, Money price, int stockQuantity)
     {
         if (string.IsNullOrWhiteSpace(name))

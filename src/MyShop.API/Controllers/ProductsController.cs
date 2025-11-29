@@ -60,11 +60,12 @@ public class ProductsController : ControllerBase
     [HttpPost]
     [ProducesResponseType(typeof(Product), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<Product>> CreateProduct([FromBody] CreateProductDto request, CancellationToken cancellationToken)
+    public async Task<ActionResult<CreatedProductDto>> CreateProduct([FromBody] CreateProductDto request, CancellationToken cancellationToken)
     {
         try
         {
             var price = new Money(request.Price, request.Currency ?? "BRL");
+            
             var product = await _productService.CreateProductAsync(
                 request.Name,
                 request.Description ?? string.Empty,
@@ -72,7 +73,7 @@ public class ProductsController : ControllerBase
                 request.StockQuantity,
                 cancellationToken);
 
-            return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, product);
+            return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, new CreatedProductDto(product.Id));
         }
         catch (Exception ex)
         {

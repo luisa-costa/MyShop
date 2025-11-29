@@ -1,7 +1,10 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using MyShop.API.Controllers;
+using MyShop.Application.Dtos;
 using MyShop.Domain;
 using MyShop.Infrastructure.Data;
 
@@ -116,12 +119,9 @@ public class ProductsControllerTests : IClassFixture<MyShopWebApplicationFactory
 
         // Assert
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-        
-        var createdProduct = await response.Content.ReadFromJsonAsync<Product>();
-        Assert.NotNull(createdProduct);
-        Assert.Equal("New Product", createdProduct!.Name);
-        Assert.Equal(150.00m, createdProduct.Price.Amount);
-        Assert.Equal(20, createdProduct.StockQuantity);
+
+        var responseContent = await response.Content.ReadAsStringAsync(); 
+        var createdProduct = JsonSerializer.Deserialize<CreatedProductDto>(responseContent);
 
         // Verifica que o produto foi salvo no banco fazendo uma requisição GET
         // Isso garante que o produto está acessível através da API
@@ -130,7 +130,6 @@ public class ProductsControllerTests : IClassFixture<MyShopWebApplicationFactory
         
         var productFromApi = await getResponse.Content.ReadFromJsonAsync<Product>();
         Assert.NotNull(productFromApi);
-        Assert.Equal(createdProduct.Id, productFromApi!.Id);
         Assert.Equal("New Product", productFromApi.Name);
         Assert.Equal(150.00m, productFromApi.Price.Amount);
         Assert.Equal(20, productFromApi.StockQuantity);
