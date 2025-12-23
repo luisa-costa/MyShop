@@ -7,7 +7,6 @@ namespace MyShop.API.Controllers;
 
 /// <summary>
 /// Controller para gerenciamento de pedidos.
-/// Demonstra operações mais complexas que envolvem múltiplas entidades e regras de negócio.
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]

@@ -36,7 +36,6 @@ public class DatabaseFixture : IDisposable
 
         var context = new MyShopDbContext(options);
 
-        // Aplica as migrations para criar o schema do banco
         // Em um cenário real, você teria migrations criadas com:
         // dotnet ef migrations add InitialCreate --project src/MyShop.Infrastructure
         // Por simplicidade, usamos EnsureCreated aqui

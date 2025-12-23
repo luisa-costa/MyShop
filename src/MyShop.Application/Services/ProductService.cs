@@ -61,6 +61,7 @@ public class ProductService
     public async Task UpdateProductStockAsync(Guid productId, int newStockQuantity, CancellationToken cancellationToken = default)
     {
         var product = await _productRepository.GetByIdAsync(productId, cancellationToken);
+        
         if (product == null)
             throw new DomainException($"Product with ID {productId} not found");
 

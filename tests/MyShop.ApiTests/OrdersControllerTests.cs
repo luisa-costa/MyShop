@@ -71,6 +71,8 @@ public class OrdersControllerTests : IClassFixture<MyShopWebApplicationFactory>,
     [Fact]
     public async Task CreateOrder_WithInsufficientStock_ShouldReturnBadRequest()
     {
+        Task.Delay(2000).Wait();
+
         // Arrange
         var product = new Product("Product", "Description", new Money(100.00m), 5); // Apenas 5 em estoque
         _context.Products.Add(product);

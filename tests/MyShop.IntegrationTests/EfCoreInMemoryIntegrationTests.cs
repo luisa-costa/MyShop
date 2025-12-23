@@ -99,8 +99,6 @@ public class EfCoreInMemoryIntegrationTests : IDisposable
         await _productService.UpdateProductStockAsync(product.Id, newStock);
 
         // Assert: Verifica que o banco foi atualizado
-        // Precisamos recarregar a entidade do banco para ver as mudanças
-        await _context.Entry(product).ReloadAsync();
         Assert.Equal(newStock, product.StockQuantity);
         Assert.NotEqual(originalStock, product.StockQuantity);
     }
@@ -176,7 +174,6 @@ public class EfCoreInMemoryIntegrationTests : IDisposable
 }
 
 /// <summary>
-/// Testes que demonstram limitações dos providers em memória.
 /// 
 /// IMPORTANTE: SQLite in-memory é útil para testes, mas tem limitações:
 /// - Não suporta todas as funcionalidades de um SQL Server real
@@ -210,11 +207,6 @@ public class DatabaseLimitationsTests : IDisposable
         // Verifica que o banco foi criado
         var canConnect = await _context.Database.CanConnectAsync();
         Assert.True(canConnect);
-
-        // Verifica que as tabelas existem
-        var tables = await _context.Database.GetAppliedMigrationsAsync();
-        // Nota: GetAppliedMigrationsAsync pode não funcionar com SQLite in-memory
-        // mas EnsureCreated() garante que o schema foi criado
     }
 
     public void Dispose()

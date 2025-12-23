@@ -6,15 +6,6 @@ using Moq;
 
 namespace MyShop.UnitTests.Services;
 
-/// <summary>
-/// Testes unitários para ProductService.
-/// 
-/// Estes testes demonstram:
-/// - Padrão AAA (Arrange, Act, Assert)
-/// - Testes de lógica de negócio
-/// - Testes de casos de sucesso e falha
-/// - Uso de mocks para isolar dependências
-/// </summary>
 public class ProductServiceTests
 {
     private readonly Mock<IProductRepository> _mockRepository;
@@ -30,7 +21,7 @@ public class ProductServiceTests
     [Fact]
     public async Task GetProductByIdAsync_WhenProductExists_ShouldReturnProduct()
     {
-        // Arrange: Prepara os dados e configurações necessárias
+        // Arrange
         var productId = Guid.NewGuid();
         var expectedProduct = new Product("Test Product", "Description", new Money(100.00m), 10);
         
@@ -39,16 +30,51 @@ public class ProductServiceTests
             .Setup(r => r.GetByIdAsync(productId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(expectedProduct);
 
-        // Act: Executa a ação que está sendo testada
+        // Act
         var result = await _service.GetProductByIdAsync(productId);
 
-        // Assert: Verifica se o resultado está correto
+        // Assert
         Assert.NotNull(result);
         Assert.Equal(expectedProduct, result);
         Assert.Equal("Test Product", result!.Name);
         
         // Verifica se o método do repositório foi chamado corretamente
         _mockRepository.Verify(r => r.GetByIdAsync(productId, It.IsAny<CancellationToken>()), Times.Once);
+
+        // Garante que não há chamadas inesperadas no mock
+        _mockRepository.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task GetProductByIdAsync_ShouldValidateThatGuidIsNotEmpty()
+    {
+        // Arrange
+        _mockRepository
+            .Setup(r => r.GetByIdAsync(
+                It.Is<Guid>(g => g != Guid.Empty),
+                It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(new Product("Valid", "OK", new Money(50m), 3));
+
+        // Act
+        var result = await _service.GetProductByIdAsync(Guid.NewGuid());
+
+        // Assert
+        Assert.Equal("Valid", result!.Name);
+    }
+
+    [Fact]
+    public async Task GetProductByIdAsync_WhenRepositoryThrows_ShouldPropagateException()
+    {
+        // Arrange
+        var productId = Guid.NewGuid();
+
+        _mockRepository
+            .Setup(r => r.GetByIdAsync(productId, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Exception("DB error"));
+
+        // Act + Assert
+        await Assert.ThrowsAsync<Exception>(() => _service.GetProductByIdAsync(productId));
     }
 
     [Fact]
@@ -96,6 +122,7 @@ public class ProductServiceTests
     }
 
     [Fact]
+    [Trait("Category", "Product")]
     public async Task CreateProductAsync_WithValidData_ShouldCreateProduct()
     {
         // Arrange
@@ -105,6 +132,7 @@ public class ProductServiceTests
         var stockQuantity = 50;
 
         Product? savedProduct = null;
+       
         _mockRepository
             .Setup(r => r.AddAsync(It.IsAny<Product>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((Product p, CancellationToken ct) =>
